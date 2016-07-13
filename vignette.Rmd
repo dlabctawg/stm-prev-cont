@@ -1,0 +1,123 @@
+---
+title: "CTAWG STM Prevalence Content Models"
+output:
+ html_document:
+   highlight: textmate
+   keep_md: yes
+   number_sections: yes
+   toc: yes
+---
+
+```{r init,echo=FALSE}
+cat('\014')
+rm(list=ls())
+graphics.off()
+options(warn=1)
+invisible(source('source.R'))
+library(data.table,quietly = T)
+library(stm,quietly = T)
+
+#local defaults
+knitr::opts_chunk$set(
+	eval=TRUE
+#	,fig.path='figs/'
+) # set eval=FALSE to render only markdown.
+std<-T #save.to.disk
+cfso<-F #check.for.saved.output
+od<-'output' #out.dir
+t0<-proc.time()
+```
+
+
+```{r,eval=F}
+if(F){
+	# for topic model
+	install.packages(c('stm','Rtsne','geometry','data.table','stmBrowser','stmCorrViz'))
+}
+```
+
+
+#Import
+
+Load ICPSR data.
+```{r import1}
+load("107th Congressional Record (ICPSR).RData")
+str(icpsr.cong107)
+```
+
+Pre-processing according to stm defaults.
+```{r}
+q<-quantile(icpsr.cong107$GPOdescr_107.txt$word.count)
+icpsr2stmbow<-icpsr2stmbow.f(
+	icpsr.cong107
+	,sample.size=100
+	,wrdmin=q[['50%']]
+	,wrdmax=q[['75%']]
+	,out.dir = od
+	,save.to.disk=std
+	,check.for.saved.output=cfso
+)
+samp<-browse.icpsr(
+	icpsr = icpsr.cong107
+	,speechID = names(icpsr2stmbow$documents)
+)
+str(icpsr2stmbow,list.len = 5)
+```
+
+
+#Basic Model
+Vanilla LDA (actually logged proportions)
+```{r,vanilla}
+k=0 #60
+it='Spectral' # 'LDA'
+v=T
+re=25
+mod<-list()
+
+mod$v<-try(stm(icpsr2stmbow$documents,icpsr2stmbow$vocab,data=samp,verbose=v,reportevery=re
+					 ,K=k
+					 ,init.type = it
+))
+save(mod,file=paste(od,'four-models.RData',sep=.Platform$file.sep))
+k=ncol(mod$v$theta)
+it='LDA'
+```
+
+#Advanced Models
+Content
+```{r,content}
+mod$c<-try(stm(icpsr2stmbow$documents,icpsr2stmbow$vocab,data=samp,verbose=v,reportevery=re
+					 ,K=k
+					 ,init.type = it
+					 ,content=~party))
+save(mod,file=paste(od,'four-models.RData',sep=.Platform$file.sep))
+```
+
+Prevalence.
+```{r,prevalence}
+mod$p<-try(stm(icpsr2stmbow$documents,icpsr2stmbow$vocab,data=samp,verbose=v,reportevery=re
+					 ,K=k
+					 ,init.type = it
+					 ,prevalence=~party))
+save(mod,file=paste(od,'four-models.RData',sep=.Platform$file.sep))
+
+```
+
+Content and prevalence.
+```{r,content-prevalence}
+mod$cp<-try(stm(icpsr2stmbow$documents,icpsr2stmbow$vocab,data=samp,verbose=v,reportevery=re
+						,K=k
+						,init.type = it
+						,prevalence=~party
+						,content=~party))
+save(mod,file=paste(od,'four-models.RData',sep=.Platform$file.sep))
+```
+
+
+
+#Visualize
+```{r}
+for(i in names(mod)) try(plot.STM(mod[[i]],type='perspectives',topics=i,covarlevels=c('Democratic','Republican')))
+```
+
+

@@ -1,0 +1,1 @@
+var topics = [{"name":"Topic 1","list":"govern, crime, act"},{"name":"Topic 2","list":"depart, food, new"},{"name":"Topic 3","list":"state, feder, local"},{"name":"Topic 4","list":"school, educ, nation"},{"name":"Topic 5","list":"senat, will, vote"}]
