@@ -26,6 +26,7 @@ std<-T #save.to.disk
 cfso<-F #check.for.saved.output
 od<-'output' #out.dir
 t0<-proc.time()
+set.seed(12345)
 ```
 
 
